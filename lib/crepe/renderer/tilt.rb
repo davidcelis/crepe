@@ -43,11 +43,12 @@ module Crepe
         path_options  = { formats: formats, handlers: handlers }
 
         template_name = options.fetch :template, model_name(resource)
-        unless template_name
+        template = find_template template_name, path_options if template_name
+
+        unless template
           return Simple.new(endpoint).render resource, options
         end
 
-        template = find_template template_name, path_options
         locals = {
           template_name => resource, resource: resource, links: links.to_h
         }
@@ -66,6 +67,8 @@ module Crepe
             resource.model_name.collection
           elsif resource.class.respond_to? :model_name
             resource.class.model_name.singular
+          else
+            resource.class.name
           end
         end
 
@@ -82,12 +85,7 @@ module Crepe
             File.directory?(path) || ::Tilt.mappings[ext].nil?
           }.first
 
-          unless template_path
-            raise MissingTemplate,
-              "Missing template #{name.inspect} with #{options}"
-          end
-
-          ::Tilt.new template_path
+          ::Tilt.new template_path if template_path
         end
 
         def template_path name, layout = false
